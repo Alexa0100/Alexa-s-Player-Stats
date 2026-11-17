@@ -25,6 +25,7 @@ h1{font-size:40px;line-height:1.05;margin:0 0 6px;font-weight:800;letter-spacing
 .tile .ico svg{width:24px;height:24px}
 .tile .l{font-size:13px;color:var(--muted)}
 .tile .v{font-size:28px;font-weight:800;line-height:1.1}
+.tile .v .bsub{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-top:2px}
 .card{background:var(--card);border-radius:16px;padding:20px;margin-bottom:20px;box-shadow:0 6px 18px rgba(20,35,27,.06)}
 .card h2{font-size:18px;font-weight:800;margin:0;display:flex;align-items:center;gap:8px}
 .card h2 svg{width:20px;height:20px}
@@ -200,7 +201,7 @@ function render(){
   $('tGames').textContent=view.length;
   $('tGoals').textContent=total;
   $('tAvg').textContent=view.length?(total/view.length).toFixed(1):'0';
-  $('tBest').textContent=view.length?Math.max(...view.map(g=>g.goals)):'0';
+  if(view.length){const best=view.reduce((b,g)=>g.goals>=b.goals?g:b);$('tBest').innerHTML=`${shortDate(best.date)}<span class="bsub">${best.goals} ${best.goals===1?'goal':'goals'}</span>`;}else{$('tBest').textContent='—';}
 
   $('log').innerHTML=view.slice().reverse().map(g=>{
     const icons=g.goals>0?`<span class="balls">${BALL.repeat(Math.min(g.goals,5))}</span>`:'';
