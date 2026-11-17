@@ -31,6 +31,17 @@ h1{font-size:40px;line-height:1.05;margin:0 0 6px;font-weight:800;letter-spacing
 .card h2 svg{width:20px;height:20px}
 .head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:14px}
 .head .filter{margin-left:auto}
+.fc-pill{margin-left:auto;background:#fff4cc;color:#7a5600;font-size:12px;font-weight:800;padding:5px 12px;border-radius:999px;letter-spacing:.03em}
+.fc-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.fc-stat{background:#f3f6f2;border-radius:12px;padding:10px 14px}
+.fc-stat .l{font-size:12px;color:var(--muted);font-weight:600}
+.fc-stat .v{font-size:24px;font-weight:800}
+.fc-stat .u{font-size:12px;color:var(--muted);font-weight:600}
+.fc-legend{display:flex;gap:18px;font-size:12px;color:var(--muted);font-weight:600;margin-top:6px}
+.fc-legend span{display:flex;align-items:center;gap:6px}
+.sw{display:inline-block;width:22px;height:0;border-top:3px solid #2f8f4e}
+.sw.dash{border-top:3px dashed #e0a100}
+.fc-note{font-size:12px;color:var(--muted);margin:8px 0 0;font-style:italic}
 .chartbox{position:relative}
 .chartbox svg{display:block;overflow:visible}
 .tip{position:absolute;transform:translate(-50%,calc(-100% - 22px));background:#14231b;color:#fff;font-size:13px;line-height:1.4;padding:8px 12px;border-radius:10px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap}
@@ -125,6 +136,21 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
     <div class="chartbox" id="chart"></div>
   </section>
 
+  <section class="card">
+    <div class="head">
+      <h2><svg><use href="#trophy"/></svg>Forecast: road to GOAT</h2>
+      <span class="fc-pill">Exponential growth model</span>
+    </div>
+    <div class="fc-stats">
+      <div class="fc-stat"><div class="l">Next game</div><div class="v" id="fNext">0</div></div>
+      <div class="fc-stat"><div class="l">In <span id="fN">6</span> games</div><div class="v" id="fEnd">0</div></div>
+      <div class="fc-stat"><div class="l">Growth rate</div><div class="v">2x <span class="u">per game</span></div></div>
+    </div>
+    <div class="chartbox" id="forecast"></div>
+    <div class="fc-legend"><span><i class="sw solid"></i>Actual</span><span><i class="sw dash"></i>Forecast</span></div>
+    <p class="fc-note">Forecast assumes goals double every game. Methodology reviewed by our chief data scientist (also Alexa).</p>
+  </section>
+
 
   <section class="card">
     <div class="head"><h2><svg><use href="#goal"/></svg>Game log</h2></div>
@@ -178,6 +204,39 @@ function drawChart(){
   });
 }
 
+const FC_GAMES=6,FC_RATE=2,FC_DAYS=14;
+function niceStep(v){const p=Math.pow(10,Math.floor(Math.log10(v)));const m=v/p;return (m<=1?1:m<=2?2:m<=5?5:10)*p;}
+function addDays(d,n){const t=parts(d);t.setDate(t.getDate()+n);return t.getFullYear()+'-'+String(t.getMonth()+1).padStart(2,'0')+'-'+String(t.getDate()).padStart(2,'0');}
+function drawForecast(){
+  const el=$('forecast');
+  if(!view.length){el.innerHTML='';return;}
+  const last=view[view.length-1],base=Math.max(1,last.goals);
+  const fc=[];for(let k=1;k<=FC_GAMES;k++)fc.push({date:addDays(last.date,FC_DAYS*k),goals:base*Math.pow(FC_RATE,k)});
+  $('fNext').textContent=fc[0].goals.toLocaleString()+' goals';
+  $('fN').textContent=FC_GAMES;
+  $('fEnd').textContent=fc[fc.length-1].goals.toLocaleString()+' goals';
+  const all=view.concat(fc),n=all.length,ai=view.length-1;
+  const W=800,H=320,pl=64,pr=30,pt=30,pb=44;
+  const mx=Math.max(...all.map(g=>g.goals)),step=niceStep(mx/4),maxY=Math.ceil(mx/step)*step;
+  const x=i=>n===1?pl+(W-pl-pr)/2:pl+i*(W-pl-pr)/(n-1);
+  const y=v=>pt+(H-pt-pb)*(1-v/maxY);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Forecast chart showing goals doubling each game"><defs><linearGradient id="fcarea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f5b700" stop-opacity=".25"/><stop offset="1" stop-color="#f5b700" stop-opacity="0"/></linearGradient></defs>`;
+  for(let v=0;v<=maxY+0.001;v+=step){s+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#c9d1cb':'#e3e8e4'}"/><text x="${pl-12}" y="${y(v)+4}" text-anchor="end" font-size="13" fill="#5d6b63">${v}</text>`;}
+  s+=`<text transform="translate(18 ${(pt+H-pb)/2}) rotate(-90)" text-anchor="middle" font-size="13" font-weight="600" fill="#5d6b63">Goals scored in game</text>`;
+  const P=all.map((g,i)=>[x(i),y(g.goals)]);
+  const fl=P.slice(ai).map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');
+  s+=`<path d="${fl} L${P[n-1][0]} ${y(0)} L${P[ai][0]} ${y(0)} Z" fill="url(#fcarea)"/>`;
+  s+=`<path d="${fl}" fill="none" stroke="#e0a100" stroke-width="3" stroke-dasharray="8 7" stroke-linecap="round"/>`;
+  if(ai>0){s+=`<path d="${P.slice(0,ai+1).map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ')}" fill="none" stroke="#2f8f4e" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>`;}
+  s+=`<line x1="${P[ai][0]}" x2="${P[ai][0]}" y1="${pt-10}" y2="${y(0)}" stroke="#c9d1cb" stroke-dasharray="3 4"/><text x="${P[ai][0]+6}" y="${pt-2}" font-size="11" font-weight="700" fill="#5d6b63">Today</text>`;
+  all.forEach((g,i)=>{const [px,py]=P[i];
+    s+=`<text x="${px}" y="${H-pb+26}" text-anchor="middle" font-size="12" font-weight="600" fill="#5d6b63">${shortDate(g.date)}</text>`;
+    if(i<=ai){s+=`<use href="#ball" x="${px-12}" y="${py-12}" width="24" height="24"/>`;}
+    else{s+=`<circle cx="${px}" cy="${py}" r="6" fill="#fff" stroke="#e0a100" stroke-width="3"/><text x="${px}" y="${py-14}" text-anchor="middle" font-size="12" font-weight="800" fill="#7a5600">${g.goals}</text>`;}
+  });
+  el.innerHTML=s+'</svg>';
+}
+
 function render(){
   const sports=[...new Set(games.map(g=>g.sport))].sort();
   const sel=$('sportFilter'),cur=sel.value||'All';
@@ -196,6 +255,7 @@ function render(){
   }).join('')||'<tr><td colspan="4" style="color:var(--muted)">No games yet.</td></tr>';
 
   drawChart();
+  drawForecast();
 }
 
 $('sportFilter').addEventListener('change',render);
