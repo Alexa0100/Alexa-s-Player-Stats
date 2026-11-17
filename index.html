@@ -125,35 +125,23 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
     <div class="chartbox" id="chart"></div>
   </section>
 
-  <section class="card">
-    <div class="head"><h2><svg><use href="#cleats"/></svg>Add a game</h2></div>
-    <form id="addForm" class="row" novalidate>
-      <label>Date<input type="date" id="fDate"></label>
-      <label>Sport<input type="text" id="fSport" value="Soccer" list="sports" style="width:140px"></label>
-      <datalist id="sports"></datalist>
-      <label>Goals scored<input type="number" id="fGoals" min="0" step="1" style="width:110px"></label>
-      <label>Opponent (optional)<input type="text" id="fOpp" style="width:170px"></label>
-      <button type="submit" class="primary"><svg><use href="#plus"/></svg>Add game</button>
-    </form>
-    <div class="err" id="err"></div>
-  </section>
 
   <section class="card">
     <div class="head"><h2><svg><use href="#goal"/></svg>Game log</h2></div>
     <table>
-      <thead><tr><th>Date</th><th>Sport</th><th>Opponent</th><th class="n">Goals</th><th></th></tr></thead>
+      <thead><tr><th>Date</th><th>Sport</th><th>Opponent</th><th class="n">Goals</th></tr></thead>
       <tbody id="log"></tbody>
     </table>
   </section>
-  <footer>New games are saved in this browser.</footer>
 </main>
 
 <script>
-const KEY='alexa-player-stats-v1';
-const seed=[{id:1,date:'2026-11-02',sport:'Soccer',goals:0,opp:''},{id:2,date:'2026-11-16',sport:'Soccer',goals:1,opp:''}];
-function load(){try{const s=localStorage.getItem(KEY);if(s)return JSON.parse(s);}catch(e){}return seed.slice();}
-function save(){try{localStorage.setItem(KEY,JSON.stringify(games));}catch(e){}}
-let games=load(),chart,view=[];
+// To add a game, copy a line below, change the details, and save.
+const GAMES=[
+  {date:'2026-11-02', sport:'Soccer', goals:0, opp:''},
+  {date:'2026-11-16', sport:'Soccer', goals:1, opp:''},
+];
+let games=GAMES.slice(),view=[];
 const $=id=>document.getElementById(id);
 const BALL='<svg><use href="#ball"/></svg>';
 function parts(d){const [y,m,dd]=d.split('-').map(Number);return new Date(y,m-1,dd);}
@@ -163,7 +151,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 
 function drawChart(){
   const el=$('chart');
-  if(!view.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:120px 0;margin:0">No games yet. Add your first one below.</p>';return;}
+  if(!view.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:120px 0;margin:0">No games yet.</p>';return;}
   const W=800,H=320,pl=64,pr=30,pt=26,pb=44,n=view.length;
   const data=view.map(g=>g.goals),maxY=Math.max(2,...data)+1;
   const x=i=>n===1?pl+(W-pl-pr)/2:pl+i*(W-pl-pr)/(n-1);
@@ -194,7 +182,6 @@ function render(){
   const sports=[...new Set(games.map(g=>g.sport))].sort();
   const sel=$('sportFilter'),cur=sel.value||'All';
   sel.innerHTML=['All',...sports].map(s=>`<option${s===cur?' selected':''}>${esc(s)}</option>`).join('');
-  $('sports').innerHTML=sports.map(s=>`<option value="${esc(s)}">`).join('');
   const f=sel.value;
   view=games.filter(g=>f==='All'||g.sport===f).sort((a,b)=>a.date.localeCompare(b.date));
   const total=view.reduce((s,g)=>s+g.goals,0);
@@ -205,24 +192,12 @@ function render(){
 
   $('log').innerHTML=view.slice().reverse().map(g=>{
     const icons=g.goals>0?`<span class="balls">${BALL.repeat(Math.min(g.goals,5))}</span>`:'';
-    return `<tr><td>${fmtDate(g.date)}</td><td><span class="pill">${esc(g.sport)}</span></td><td>${esc(g.opp||'—')}</td><td class="n">${icons}<span class="goalnum${g.goals?'':' zero'}">${g.goals}</span></td><td class="n"><button class="ghost" data-id="${g.id}">Remove</button></td></tr>`;
-  }).join('')||'<tr><td colspan="5" style="color:var(--muted)">No games yet. Add your first one above.</td></tr>';
+    return `<tr><td>${fmtDate(g.date)}</td><td><span class="pill">${esc(g.sport)}</span></td><td>${esc(g.opp||'—')}</td><td class="n">${icons}<span class="goalnum${g.goals?'':' zero'}">${g.goals}</span></td></tr>`;
+  }).join('')||'<tr><td colspan="4" style="color:var(--muted)">No games yet.</td></tr>';
 
   drawChart();
 }
 
-$('addForm').addEventListener('submit',e=>{
-  e.preventDefault();
-  const date=$('fDate').value,sport=$('fSport').value.trim(),gv=$('fGoals').value,opp=$('fOpp').value.trim();
-  if(!date){$('err').textContent='Enter a date first.';return;}
-  if(!sport){$('err').textContent='Enter a sport.';return;}
-  const goals=Number(gv);
-  if(gv===''||!Number.isInteger(goals)||goals<0){$('err').textContent='Enter goals as a whole number, 0 or more.';return;}
-  games.push({id:Date.now(),date,sport,goals,opp});
-  save();$('fGoals').value='';$('fOpp').value='';$('err').textContent='';render();
-});
-['fDate','fSport','fGoals'].forEach(id=>$(id).addEventListener('input',()=>$('err').textContent=''));
-$('log').addEventListener('click',e=>{const id=e.target.dataset.id;if(!id)return;games=games.filter(g=>String(g.id)!==id);save();render();});
 $('sportFilter').addEventListener('change',render);
 render();
 </script>
