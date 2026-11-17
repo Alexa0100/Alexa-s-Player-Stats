@@ -30,7 +30,9 @@ h1{font-size:40px;line-height:1.05;margin:0 0 6px;font-weight:800;letter-spacing
 .card h2 svg{width:20px;height:20px}
 .head{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:14px}
 .head .filter{margin-left:auto}
-.chartbox{position:relative;height:320px}
+.chartbox{position:relative}
+.chartbox svg{display:block;overflow:visible}
+.tip{position:absolute;transform:translate(-50%,calc(-100% - 22px));background:#14231b;color:#fff;font-size:13px;line-height:1.4;padding:8px 12px;border-radius:10px;pointer-events:none;opacity:0;transition:opacity .15s;white-space:nowrap}
 .row{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
 label{display:flex;flex-direction:column;font-size:12px;color:var(--muted);gap:5px;font-weight:600}
 input,select{font:inherit;font-size:14px;padding:9px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;color:var(--ink);font-weight:500}
@@ -77,7 +79,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
     <symbol id="goal" viewBox="0 0 24 24"><g fill="none" stroke="#1f6b38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 19V6h18v13"/><path d="M3 10h18M3 14h18M8 6v13M12 6v13M16 6v13" stroke-width="1" opacity=".6"/></g></symbol>
     <symbol id="cleats" viewBox="0 0 24 24"><g fill="none" stroke="#1f6b38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15c0-3 1-7 4-8l3 4c2 1 6 1 9 2 1 .5 2 1.5 2 3v1H3z"/><path d="M6 19v-3M10 19v-3M14 19v-3M18 19v-3"/></g></symbol>
     <symbol id="trophy" viewBox="0 0 24 24"><g fill="none" stroke="#1f6b38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 4h8v5a4 4 0 0 1-8 0z"/><path d="M8 6H5a3 3 0 0 0 3 4M16 6h3a3 3 0 0 1-3 4M12 13v4M8 20h8M10 17h4"/></g></symbol>
-    <symbol id="chart" viewBox="0 0 24 24"><g fill="none" stroke="#1f6b38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M5 15l5-5 4 3 5-6"/></g></symbol>
+    <symbol id="ico-chart" viewBox="0 0 24 24"><g fill="none" stroke="#1f6b38" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16"/><path d="M5 15l5-5 4 3 5-6"/></g></symbol>
     <symbol id="plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/></symbol>
   </defs>
 </svg>
@@ -101,9 +103,7 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
     <svg class="ball-big" aria-hidden="true"><use href="#ball"/></svg>
     <div>
       <span class="eyebrow">Alexa's player stats</span>
-      <h1>Alexa's Hero Journey</h1>
-      <p>Every game, every goal.</p>
-    </div>
+      <h1>Alexa's Hero Journey</h1>    </div>
   </div>
 </header>
 
@@ -112,16 +112,16 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
   <div class="tiles">
     <div class="tile"><div class="ico"><svg><use href="#cleats"/></svg></div><div><div class="l">Games played</div><div class="v" id="tGames">0</div></div></div>
     <div class="tile"><div class="ico"><svg><use href="#goal"/></svg></div><div><div class="l">Total goals</div><div class="v" id="tGoals">0</div></div></div>
-    <div class="tile"><div class="ico"><svg><use href="#chart"/></svg></div><div><div class="l">Goals per game</div><div class="v" id="tAvg">0</div></div></div>
+    <div class="tile"><div class="ico"><svg><use href="#ico-chart"/></svg></div><div><div class="l">Goals per game</div><div class="v" id="tAvg">0</div></div></div>
     <div class="tile"><div class="ico"><svg><use href="#trophy"/></svg></div><div><div class="l">Best game</div><div class="v" id="tBest">0</div></div></div>
   </div>
 
   <section class="card">
     <div class="head">
-      <h2><svg><use href="#chart"/></svg>Path to MVP</h2>
+      <h2><svg><use href="#ico-chart"/></svg>Path to MVP</h2>
       <label class="filter">Sport<select id="sportFilter"></select></label>
     </div>
-    <div class="chartbox"><canvas id="chart" role="img" aria-label="Line chart of goals scored per game over time"></canvas></div>
+    <div class="chartbox" id="chart"></div>
   </section>
 
   <section class="card">
@@ -147,7 +147,6 @@ footer{text-align:center;color:var(--muted);font-size:12px;margin-top:8px}
   <footer>New games are saved in this browser.</footer>
 </main>
 
-<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
 <script>
 const KEY='alexa-player-stats-v1';
 const seed=[{id:1,date:'2026-11-02',sport:'Soccer',goals:0,opp:''},{id:2,date:'2026-11-16',sport:'Soccer',goals:1,opp:''}];
@@ -161,8 +160,34 @@ const fmtDate=d=>parts(d).toLocaleDateString('en-US',{month:'short',day:'numeric
 const shortDate=d=>parts(d).toLocaleDateString('en-US',{month:'short',day:'numeric'});
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-const ballImg=new Image(26,26);
-ballImg.src='data:image/svg+xml;utf8,'+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">'+document.getElementById('ball').innerHTML+'</svg>');
+function drawChart(){
+  const el=$('chart');
+  if(!view.length){el.innerHTML='<p style="color:var(--muted);text-align:center;padding:120px 0;margin:0">No games yet. Add your first one below.</p>';return;}
+  const W=800,H=320,pl=64,pr=30,pt=26,pb=44,n=view.length;
+  const data=view.map(g=>g.goals),maxY=Math.max(2,...data)+1;
+  const x=i=>n===1?pl+(W-pl-pr)/2:pl+i*(W-pl-pr)/(n-1);
+  const y=v=>pt+(H-pt-pb)*(1-v/maxY);
+  let s=`<svg viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Line chart of goals scored per game over time"><defs><linearGradient id="area" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2f8f4e" stop-opacity=".3"/><stop offset="1" stop-color="#2f8f4e" stop-opacity="0"/></linearGradient></defs>`;
+  for(let v=0;v<=maxY;v++){s+=`<line x1="${pl}" x2="${W-pr}" y1="${y(v)}" y2="${y(v)}" stroke="${v===0?'#c9d1cb':'#e3e8e4'}" stroke-width="1"/><text x="${pl-12}" y="${y(v)+4}" text-anchor="end" font-size="13" fill="#5d6b63">${v}</text>`;}
+  s+=`<text transform="translate(18 ${(pt+H-pb)/2}) rotate(-90)" text-anchor="middle" font-size="13" font-weight="600" fill="#5d6b63">Goals scored in game</text>`;
+  const pts=view.map((g,i)=>[x(i),y(g.goals)]);
+  if(n>1){
+    const line=pts.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');
+    s+=`<path d="${line} L${pts[n-1][0]} ${y(0)} L${pts[0][0]} ${y(0)} Z" fill="url(#area)"/>`;
+    s+=`<path d="${line}" fill="none" stroke="#2f8f4e" stroke-width="3.5" stroke-linejoin="round" stroke-linecap="round"/>`;
+  }
+  view.forEach((g,i)=>{const [px,py]=pts[i];
+    s+=`<text x="${px}" y="${H-pb+26}" text-anchor="middle" font-size="13" font-weight="600" fill="#5d6b63">${shortDate(g.date)}</text>`;
+    s+=`<g class="pt" data-i="${i}" style="cursor:pointer"><circle cx="${px}" cy="${py}" r="20" fill="transparent"/><use href="#ball" x="${px-14}" y="${py-14}" width="28" height="28"/></g>`;});
+  s+='</svg><div id="tip" class="tip"></div>';
+  el.innerHTML=s;
+  el.querySelectorAll('.pt').forEach(p=>{
+    p.addEventListener('mouseenter',()=>{const i=+p.dataset.i,g=view[i],t=$('tip');
+      t.innerHTML=`<b>${fmtDate(g.date)}</b><br>${g.goals} ${g.goals===1?'goal':'goals'}${g.opp?' vs '+esc(g.opp):''}`;
+      t.style.left=(pts[i][0]/W*100)+'%';t.style.top=(pts[i][1]/H*100)+'%';t.style.opacity=1;});
+    p.addEventListener('mouseleave',()=>{$('tip').style.opacity=0;});
+  });
+}
 
 function render(){
   const sports=[...new Set(games.map(g=>g.sport))].sort();
@@ -182,13 +207,7 @@ function render(){
     return `<tr><td>${fmtDate(g.date)}</td><td><span class="pill">${esc(g.sport)}</span></td><td>${esc(g.opp||'—')}</td><td class="n">${icons}<span class="goalnum${g.goals?'':' zero'}">${g.goals}</span></td><td class="n"><button class="ghost" data-id="${g.id}">Remove</button></td></tr>`;
   }).join('')||'<tr><td colspan="5" style="color:var(--muted)">No games yet. Add your first one above.</td></tr>';
 
-  const labels=view.map(g=>shortDate(g.date)),data=view.map(g=>g.goals),maxY=Math.max(2,...data)+1;
-  if(chart){chart.data.labels=labels;chart.data.datasets[0].data=data;chart.options.scales.y.suggestedMax=maxY;chart.update();return;}
-  const ctx=$('chart').getContext('2d');
-  const grad=ctx.createLinearGradient(0,0,0,320);grad.addColorStop(0,'rgba(47,143,78,.28)');grad.addColorStop(1,'rgba(47,143,78,0)');
-  chart=new Chart(ctx,{type:'line',data:{labels,datasets:[{label:'Goals scored in game',data,borderColor:'#2f8f4e',backgroundColor:grad,fill:true,pointStyle:ballImg,pointRadius:13,pointHoverRadius:15,borderWidth:3,tension:.25}]},
-    options:{responsive:true,maintainAspectRatio:false,layout:{padding:{top:14,right:14,left:4}},plugins:{legend:{display:false},tooltip:{backgroundColor:'#14231b',padding:10,displayColors:false,callbacks:{title:i=>fmtDate(view[i[0].dataIndex].date),label:c=>c.parsed.y+(c.parsed.y===1?' goal':' goals')+(view[c.dataIndex].opp?' vs '+view[c.dataIndex].opp:'')}}},
-    scales:{x:{grid:{display:false},ticks:{color:'#5d6b63',font:{weight:'600'}}},y:{beginAtZero:true,suggestedMax:maxY,ticks:{stepSize:1,precision:0,color:'#5d6b63'},grid:{color:'#e3e8e4'},border:{display:false},title:{display:true,text:'Goals scored in game',color:'#5d6b63',font:{weight:'600'}}}}}});
+  drawChart();
 }
 
 $('addForm').addEventListener('submit',e=>{
@@ -204,7 +223,7 @@ $('addForm').addEventListener('submit',e=>{
 ['fDate','fSport','fGoals'].forEach(id=>$(id).addEventListener('input',()=>$('err').textContent=''));
 $('log').addEventListener('click',e=>{const id=e.target.dataset.id;if(!id)return;games=games.filter(g=>String(g.id)!==id);save();render();});
 $('sportFilter').addEventListener('change',render);
-ballImg.onload=render;if(ballImg.complete)render();
+render();
 </script>
 </body>
 </html>
